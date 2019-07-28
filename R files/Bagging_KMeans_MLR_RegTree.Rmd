@@ -1,0 +1,160 @@
+---
+title: "Regression tree and Mlr backward selections and K-Means Cluster and Bagging"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(MASS)
+require(methods)
+library(MLmetrics)
+library(gclus)
+library(tree)
+library(randomForest)
+library(fda)
+library(cluster)
+library(tidyverse)
+library(factoextra)
+library(neuralnet)
+library(class)
+library(plot3D)
+```
+
+```{r, eval=TRUE}
+setwd("/Users/KartikTiwari/Desktop/2")
+playatt<-read.csv("Player_Attributes.csv",header = TRUE)
+play2<-read.csv("Player_Attributes_2.csv",header = TRUE)
+play3<-read.csv("Player_Attributes_3.csv",header = TRUE)
+attach(playatt)
+attach(play2)
+attach(play3)
+```
+
+#Regression Tree
+```{r,eval=TRUE}
+playerRegt<-tree(overall_rating~(crossing+finishing+short_passing+volleys+dribbling+stamina+strength+sprint_speed), data = playatt)
+plot(playerRegt, uniform=TRUE, main="Regression Tree for Rating")
+text(playerRegt, pretty=0)
+summary(playerRegt)
+ctre <- cv.tree(playerRegt, K=20)
+plot (ctre, type="b")
+bestsize <- ctre$size[which.min(ctre$dev)]
+bestsize
+
+```
+
+#Linear Models
+```{r, eval=TRUE}
+
+lmmid<-lm(as.matrix(overall_rating)~
+            #as.matrix(short_passing)+
+            as.matrix(vision)+
+            as.matrix(long_passing)+
+            as.matrix(dribbling)+
+            as.matrix(strength)+
+            as.matrix(aggression)+
+            as.matrix(ball_control)
+          )
+summary(lmmid)
+
+```
+
+```{r, eval=TRUE}
+
+lmdef<-lm(as.matrix(overall_rating)~
+            as.matrix(aggression)+
+            as.matrix(marking)+
+            as.matrix(sprint_speed)+
+            as.matrix(interceptions)+
+            as.matrix(standing_tackle)+
+            as.matrix(sliding_tackle)+
+            as.matrix(positioning)
+          )
+summary(lmdef)
+
+```
+
+```{r,eval=TRUE}
+
+lmatt<-lm(as.matrix(overall_rating)~
+            #as.matrix(finishing)+
+            as.matrix(heading_accuracy)+
+            as.matrix(volleys)+
+            as.matrix(curve)+
+            #as.matrix(acceleration)+
+            as.matrix(sprint_speed)+
+            as.matrix(agility)
+          )
+summary(lmatt)
+
+```
+
+```{r,eval=TRUE}
+
+lmgk<-lm(as.matrix(overall_rating)~
+           as.matrix(gk_diving)+
+           as.matrix(gk_handling)+
+           as.matrix(gk_kicking)+
+           as.matrix(gk_positioning)+
+           as.matrix(gk_reflexes)+
+           #as.matrix(vision)+
+           as.matrix(sliding_tackle)+
+           as.matrix(standing_tackle)
+         )
+summary(lmgk)
+
+```
+
+```{r,eval=TRUE}
+
+d1<-na.omit(play2$overall_rating+play2$vision)
+car_numeric<-d1
+scar <- apply(car_numeric, 2, function(v) (v-min(v))/(max(v)-min(v)))
+nnc <- neuralnet(data=scar,paste("overall_rating~", paste(colnames(scar),collapse =" + ")))
+residu <- compute(nnc, scar[,-c(1)])
+mean((scar[,1]-residu$net.result)^2)
+
+```
+
+#K-Means Cluster
+```{r,eval=TRUE}
+df<-subset(play2,overall_rating>75)
+df1<-na.omit(df)
+df2<-scale(df1)
+head(df2)
+k1<-kmeans(df2, centers = 4,nstart = 20)
+str(k1)
+
+fviz_cluster(k1, data = df1)
+
+```
+
+```{r,eval=TRUE}
+df<-subset(play3,overall_rating>75 & position=="attack") #using player ratings of players above 75 and goal-keeping position
+df11<-na.omit(df[,-42]) #using data besides position in column 42, and removing all the blank values
+df21<-scale(df11)
+head(df21)
+k11<-kmeans(df21, centers = 3,nstart = 20)
+str(k11)
+
+fviz_cluster(k11, data = df11)
+```
+
+#Bagging
+```{r,eval=TRUE}
+play22<-subset(play2,play2$overall_rating>80)
+rf<-randomForest(sprint_speed~(acceleration+stamina+dribbling),mtry=2, data=play22, importance=TRUE)
+rf
+varImpPlot(rf)
+regt3<-tree(sprint_speed~(acceleration+stamina+dribbling), data = play22)
+plot(regt3, uniform=TRUE, main="Regression Tree for Rating")
+text(regt3, pretty=0)
+summary(regt3)
+ctree <- cv.tree(regt3, K=20)
+plot (ctree, type="b")
+bestsize <- ctree$size[which.min(ctree$dev)]
+bestsize
+```
+

@@ -1,0 +1,85 @@
+---
+title: "Clutering Analysis of Team Attributes (2014 season)"
+author: "Herraj Luhano"
+date: "March 31, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(factoextra)
+library(dplyr)
+
+# reading Team attributes file
+teamAtts <- read.csv("Team_Attributes.csv", header = TRUE)
+
+#removing null observations
+teamAtts <- na.omit(teamAtts)
+
+# Getting Team Attributes for the year 2014
+teamAtts <- teamAtts[which(teamAtts[,"date"]==2014),]
+
+#reading team details file
+team <- read.csv("Team.csv", header = TRUE)
+#removing null observations
+team <- na.omit(team)
+
+#Merging team data 
+Team_merged <- merge(teamAtts, team, by="team_api_id")
+#write.csv(Team_merged, "C:\\Users\\14214143\\Desktop\\TEAMMERGED.csv", row.names = FALSE)
+
+# filtering out useful numeric data
+teamData <- Team_merged[ , -c(1:4, 6,8,10,11,13,15,17,18,20,22,24,25,26,27,29,30)]
+#deleting duplicates
+teamData <- distinct(teamData)
+
+
+#scaling the numeric data (removing the team name column)
+scaled_teamAtts <- scale(teamData[ , -c(10)])
+
+#assigning team team names to the scaled data matrix from above line
+rownames(scaled_teamAtts) <- teamData[ ,10]
+
+
+#distance matrix for build up attributes
+dstMtx_teamAtts_buildup <- dist(scaled_teamAtts[,c(1:3)], method = "euclidean")
+
+#distance matrix for chance creation attributes
+dstMtx_teamAtts_chance <- dist(scaled_teamAtts[,c(4:6)], method = "euclidean")
+
+#distance matrix for defence attributes
+dstMtx_teamAtts_defence <- dist(scaled_teamAtts[,c(7:9)], method = "euclidean")
+
+#Building heirarchichal clusters for the above matrices
+hc_buildup <- hclust(dstMtx_teamAtts_buildup, method = "complete")
+hc_chance <- hclust(dstMtx_teamAtts_chance, method = "complete")
+hc_defence <- hclust(dstMtx_teamAtts_defence, method = "complete")
+
+#creating dendograms
+plot(hc_buildup,cex=0.8, hang = -1)
+plot(hc_chance,cex=0.8, hang = -1)
+plot(hc_defence,cex=0.8, hang = -1)
+
+#creating sub groups based on the dendograms above (K value changes based on the data)
+sub_grp_buildup <- cutree(hc_buildup, k = 4)
+sub_grp_chance <- cutree(hc_chance, k = 4)
+sub_grp_defence <- cutree(hc_defence, k = 2)
+
+#creating cluster visualizations
+fviz_cluster(list(data = scaled_teamAtts, cluster = sub_grp_buildup), main = "Buildup Play Attributes (2014)")
+fviz_cluster(list(data = scaled_teamAtts, cluster = sub_grp_chance), main = "Chance creation Attributes (2014)")
+fviz_cluster(list(data = scaled_teamAtts, cluster = sub_grp_defence), main = "Defence Attributes (2014)")
+
+
+
+```
+
+
+
+```{r}
+
+```

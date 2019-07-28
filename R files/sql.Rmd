@@ -1,0 +1,71 @@
+---
+title: "Team Attributes Analysis"
+author: "Herraj Luhano"
+date: "March 30, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(sqldf)
+
+matchAttributes <- read.csv("Match.csv")
+
+yeet <- read.csv("yeet.csv")
+
+
+teamAttributes <- read.csv("Team_Attributes.csv")
+
+```
+
+
+```{r}
+lulu <- sqldf("SELECT Team_api_id, home_team_api_id, home_team_goal, away_team_goal 
+              FROM yeet, matchAttributes
+              WHERE Team_api_id == home_team_api_id ")
+```
+
+
+```{r}
+homeTeams_goalsScored <- sqldf("SELECT 
+                                Team_api_id, 
+                                SUM(home_team_goal) AS 'HomeGoals', 
+                                SUM(away_team_goal) AS 'AwayGoals'
+                               FROM lulu
+                               GROUP BY Team_api_id"
+                               )
+
+
+homeTeams_goalsScored
+
+write.csv(homeTeams_goalsScored, "C:\\Users\\14214143\\Desktop\\Team_Goal_summary.csv", row.names = FALSE)
+```
+
+```{r}
+goalRatio <- read.csv("Team_Goal_summary.csv")
+
+goalRatio[which(goalRatio$Goal.ratio == max(goalRatio$Goal.ratio)), ]
+```
+
+```{r, eval=FALSE}
+leagueTeams <- sqldf("SELECT home_team_api_id, league_id
+                     FROM matchAttributes
+                     GROUP BY home_team_api_id"
+                     )
+  
+write.csv(leagueTeams, "C:\\Users\\14214143\\Desktop\\leagueTeams.csv", row.names = FALSE)
+
+
+```
+
+
+
+
+
+
+
+
+
